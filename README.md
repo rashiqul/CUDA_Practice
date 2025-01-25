@@ -8,14 +8,6 @@ A repository to practice CUDA programming using CMake. This repository demonstra
 - **CMake Version**: 3.18+
 - **OS**: Windows Subsystem for Linux (WSL)
 
-## Directory Structure
-workspace/ 
-    ├── src/ 
-        │ └── main.cu  # CUDA application code 
-    ├── build/         # Directory for build files (auto-generated) 
-    ├── CMakeLists.txt # CMake configuration file 
-    ├── Makefile       # Makefile for building and cleaning
-
 ## Variables in Makefile
 - `BUILD_DIR`: Directory where build files are generated (`build/`).
 - `TARGET`: The executable name (`cuda_app`).
@@ -30,5 +22,5 @@ workspace/
 ### Usage
 #### Build the Project
 ```bash
+make clean
 make build
-make run
