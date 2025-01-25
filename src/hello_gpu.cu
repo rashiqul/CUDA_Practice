@@ -13,6 +13,7 @@ int main(void)
     /* Local defines */
     cudaDeviceProp deviceProp;
     int deviceCount = 0;
+    int device = 0;
     
     /* Print a message from the host */
     std::cout << "Hello, World! From the CPU!" << std::endl;
@@ -26,7 +27,8 @@ int main(void)
     cudaGetDeviceCount(&deviceCount);
 
     /* Retrieve and display device properties */
-    cudaGetDeviceProperties(&deviceProp, deviceCount);
+    cudaGetDevice(&device);
+    cudaGetDeviceProperties(&deviceProp, device);
 
     std::cout << "Device " << deviceCount << " name: " << deviceProp.name << std::endl;
     std::cout << "Computational Capabilities: " << deviceProp.major << "." 
