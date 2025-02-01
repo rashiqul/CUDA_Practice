@@ -55,9 +55,11 @@ __global__ void vectorAdditionAdjacent(int *A, int *B, int *R, int N)
         }
     }
 
-    if (idx_out < (N + K - 1) / K)  // Ensure valid output index
+    /* Ensure valid output index */
+    if (idx_out < (N + K - 1) / K)  
     {
-        R[idx_out] = sum;  // Store result sequentially in R
+        /* Store result sequentially in R */
+        R[idx_out] = sum;  
     }
 }
 
