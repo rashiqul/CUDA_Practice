@@ -50,11 +50,11 @@ void verifyResult(float *A, float *B, float *C, int n)
         expected = A[i] + B[i];
         if (fabs(C[i] - expected) > TOLERANCE)
         {
-             printf("Error at index %d: GPU result %f, expected %f\n", i, C[i], expected);
+             printf("❌ Error at index %d: GPU result %f, expected %f\n", i, C[i], expected);
             return;
         }
     }
-    printf("Unit test passed! GPU result matches CPU calculation.\n");
+    printf("✅ Unit test passed! GPU result matches CPU calculation.\n");
 }
 
 int main(void)
