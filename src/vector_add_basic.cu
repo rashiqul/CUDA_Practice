@@ -33,7 +33,7 @@ void vectorAdd(float *A, float *B, float *C, int n)
     vectorAddKernel<<<ceil(n/256.0), 256.0>>>(A_d, B_d, C_d, n);
 
     /* Transfer C from device to host */
-     cudaMemcpy(C, C_d, size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(C, C_d, size, cudaMemcpyDeviceToHost);
 
     /* Free device memory foe A_d, B_d and C_d */
     cudaFree(A_d);
@@ -57,7 +57,7 @@ void verifyResult(float *A, float *B, float *C, int n)
     printf("Unit test passed! GPU result matches CPU calculation.\n");
 }
 
-int main()
+int main(void)
 {
     /* Size of large vectors, 1 million elements as an example */
     int n = 1000000; 

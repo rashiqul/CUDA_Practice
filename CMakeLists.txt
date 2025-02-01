@@ -8,7 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 enable_language(CUDA)
 
 # Add the source file
-set(SOURCE_FILES src/vector_add.cu)
+set(SOURCE_FILES src/sum_k_adjacent_elements.cu)
 
 # Define the executable
 add_executable(cuda_app ${SOURCE_FILES})
