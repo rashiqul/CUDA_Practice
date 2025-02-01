@@ -65,14 +65,15 @@ __global__ void vectorAdditionAdjacent(int *A, int *B, int *R, int N)
 
 int main(void)
 {
-    /* Allocate host memory */
+    /* Ensure correct memory allocation for A and B */
     int input_size  = NUM_OF_ELEMENTS * sizeof(int);
     /* Ensure correct memory allocation for R */
     int output_size = ((NUM_OF_ELEMENTS + K - 1) / K) * sizeof(int); 
 
     int *h_A, *h_B, *h_R, *h_C;
     int *d_A, *d_B, *d_R;
-
+    
+    /* Allocate host memory */
     h_A = (int *)malloc(input_size);
     h_B = (int *)malloc(input_size);
     h_R = (int *)malloc(output_size);
