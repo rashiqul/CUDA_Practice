@@ -101,7 +101,8 @@ int main(void)
 
     /* Launch kernel */
     vectorAdditionAdjacent<<<dimGrid, dimBlock>>>(d_A, d_B, d_R, NUM_OF_ELEMENTS);
-    cudaDeviceSynchronize(); // Ensure execution is complete before copying back
+    /* Ensure execution is complete before copying back */
+    cudaDeviceSynchronize(); 
 
     /* Copy result back to host */
     cudaMemcpy(h_R, d_R, output_size, cudaMemcpyDeviceToHost);
