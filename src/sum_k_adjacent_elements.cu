@@ -6,10 +6,8 @@
 #define K               6u   // Number of adjacent elements to sum
 #define BLOCK_SIZE      32u  // Number of threads per block
 
-void verifyResult(int *A, int *B, int *C, int *R)
+void verifyResult(int *A, int *B, int *C, int *R, int num_groups)
 {
-    int num_groups = (NUM_OF_ELEMENTS + K - 1) / K; // Correct ceil(NUM_OF_ELEMENTS / K)
-    
     /* Each output R[i] corresponds to a group of K elements */
     for (int i = 0; i < num_groups; i++) 
     {  
@@ -40,7 +38,7 @@ void verifyResult(int *A, int *B, int *C, int *R)
 }
 
 /* CUDA Kernel */
-__global__ void vectorAdditionAdjacent(int *A, int *B, int *R, int N)
+__global__ void vectorAdditionAdjacent(int *A, int *B, int *R, int num_groups)
 {
     int idx_out = blockIdx.x * blockDim.x + threadIdx.x;
     int idx_in = idx_out * K;
@@ -49,14 +47,15 @@ __global__ void vectorAdditionAdjacent(int *A, int *B, int *R, int N)
     for (int i = 0; i < K; i++)
     {
         int element_index = idx_in + i;
-        if (element_index < N)  // Bounds check
+        /* Bounds check */
+        if (element_index < NUM_OF_ELEMENTS)  
         {
             sum += A[element_index] + B[element_index];
         }
     }
 
     /* Ensure valid output index */
-    if (idx_out < (N + K - 1) / K)  
+    if (idx_out < (NUM_OF_ELEMENTS + K - 1) / K)  
     {
         /* Store result sequentially in R */
         R[idx_out] = sum;  
@@ -69,6 +68,8 @@ int main(void)
     int input_size  = NUM_OF_ELEMENTS * sizeof(int);
     /* Ensure correct memory allocation for R */
     int output_size = ((NUM_OF_ELEMENTS + K - 1) / K) * sizeof(int); 
+    /* Calculate number of groups */
+    int num_groups = (NUM_OF_ELEMENTS + K - 1) / K; 
 
     int *h_A, *h_B, *h_R, *h_C;
     int *d_A, *d_B, *d_R;
@@ -96,12 +97,12 @@ int main(void)
     cudaMemcpy(d_B, h_B, input_size, cudaMemcpyHostToDevice);
 
     /* Compute correct grid size */
-    int num_groups = (NUM_OF_ELEMENTS + K - 1) / K;
+
     dim3 dimBlock(BLOCK_SIZE);
     dim3 dimGrid((num_groups + BLOCK_SIZE - 1) / BLOCK_SIZE);
 
     /* Launch kernel */
-    vectorAdditionAdjacent<<<dimGrid, dimBlock>>>(d_A, d_B, d_R, NUM_OF_ELEMENTS);
+    vectorAdditionAdjacent<<<dimGrid, dimBlock>>>(d_A, d_B, d_R, num_groups);
     /* Ensure execution is complete before copying back */
     cudaDeviceSynchronize(); 
 
@@ -116,7 +117,7 @@ int main(void)
     }
 
     /* Verify results */
-    verifyResult(h_A, h_B, h_R, h_C);
+    verifyResult(h_A, h_B, h_R, h_C, num_groups);
 
     /* Free memory */
     cudaFree(d_A);
