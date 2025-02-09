@@ -9,7 +9,7 @@
 
 #define NUM_OF_ELEMENTS 196u  /* Number of elements in the array  */
 #define TILE_WIDTH        7u  /* Width of the square tile, 7x7    */
-#define EPSILON        1e-5   /* Error threshold for verification */ 
+#define EPSILON         1e-5  /* Error threshold for verification */ 
 
 __global__ void MatrixMultiply(float *A, float *B, float *C)
 {
@@ -98,6 +98,12 @@ int main(void)
     C_h = (float*)malloc(NUM_OF_ELEMENTS * sizeof(float));
     C_r = (float*)malloc(NUM_OF_ELEMENTS * sizeof(float));
 
+    /* Check if memory allocation was successful */
+    if (A_h == NULL || B_h == NULL || C_h == NULL || C_r == NULL) {
+        fprintf(stderr, "Failed to allocate host memory\n");
+        return -1;
+    }
+
     /* Initialize the matrixes */
     initializeMatrix(A_h);
     initializeMatrix(B_h);
@@ -106,6 +112,12 @@ int main(void)
     cudaMalloc((void**)&A_d, NUM_OF_ELEMENTS * sizeof(float));
     cudaMalloc((void**)&B_d, NUM_OF_ELEMENTS * sizeof(float));
     cudaMalloc((void**)&C_d, NUM_OF_ELEMENTS * sizeof(float));
+
+    /* Check if memory allocation was successful */
+    if (A_d == NULL || B_d == NULL || C_d == NULL) {
+        fprintf(stderr, "Failed to allocate device memory\n");
+        return -1;
+    }
 
     /* Copy data from the host memory to the device */
     cudaMemcpy(A_d, A_h, NUM_OF_ELEMENTS * sizeof(float), cudaMemcpyHostToDevice);
