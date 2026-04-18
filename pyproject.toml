@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "cuda-workspace"
+package-mode = false
+version = "0.1.0"
+description = "Applied Parallel Computing - CUDA workspace"
+authors = ["Mohammad Rashiqul Alam <md.rashiqul.alam@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = "*"
+matplotlib = "*"
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

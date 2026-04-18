@@ -5,3 +5,9 @@
 *.cubin
 *.fatbin
 /build
+
+# Python / Poetry
+.venv/
+__pycache__/
+*.pyc
+poetry.lock
