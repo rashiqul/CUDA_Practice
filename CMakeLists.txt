@@ -15,14 +15,5 @@ foreach(SOURCE_FILE ${SOURCE_FILES})
     get_filename_component(EXECUTABLE_NAME ${SOURCE_FILE} NAME_WE)
     add_executable(${EXECUTABLE_NAME} ${SOURCE_FILE})
 
-    # Set compiler flags for CUDA (optional)
     set_target_properties(${EXECUTABLE_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-    # Post-build commands
-    add_custom_command(
-        TARGET ${EXECUTABLE_NAME}
-        POST_BUILD
-        COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${EXECUTABLE_NAME} > ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${EXECUTABLE_NAME}_output.log 2> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${EXECUTABLE_NAME}_error.log && echo ""
-        COMMENT "Running ${EXECUTABLE_NAME} and logging output."
-    )
 endforeach()
