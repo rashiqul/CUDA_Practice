@@ -29,7 +29,7 @@ build:
 		echo "Building all CUDA targets..."; \
 		cmake --build $(BUILD_DIR); \
 		echo ""; \
-		for src in src/*.cu; do \
+		for src in src/*/*.cu; do \
 			name=$$(basename $$src .cu); \
 			echo "=== $$name output ==="; \
 			$(BUILD_DIR)/$$name 2>&1 | tee $(BUILD_DIR)/$${name}_output.txt; \
