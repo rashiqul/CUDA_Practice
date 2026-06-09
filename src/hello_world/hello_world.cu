@@ -1,23 +1,27 @@
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
 #include <stdio.h>
 
-// Each thread prints its block and thread index.
-// __global__ marks this as a kernel — runs on the GPU, called from the CPU.
-__global__ void hello_world() {
-    printf("Hello from block %d, thread %d\n", blockIdx.x, threadIdx.x);
+#define BLOCK_SIZE     2
+#define NUM_OF_THREADS 32
+
+// A simple CUDA kernel that prints the block and thread IDs to demonstrate parallel execution
+__global__ void print_block_thread_info()
+{
+    // Print the block and thread IDs to demonstrate parallel execution
+    printf("The block ID is (%d, %d, %d). The thread ID is (%d, %d, %d)\n", blockIdx.x, blockIdx.y, blockIdx.z, threadIdx.x, threadIdx.y, threadIdx.z);
 }
 
-int main() {
-    // Launch configuration: <<<blocks, threads_per_block>>>
-    //   - 2 blocks
-    //   - 4 threads per block
-    //   - 8 total threads (2 x 4)
-    //
-    // Each thread gets a unique (blockIdx.x, threadIdx.x) pair:
-    //   block 0: threads 0-3
-    //   block 1: threads 0-3
-    hello_world<<<2, 4>>>();
+int main()
+{
+    printf("Hello, World from CPU!\n");
+    
+    // Launch the kernel with the defined block size and number of threads
+    // Kernel launch syntax: kernel<<<numBlocks, threadsPerBlock>>>(arguments);
+    print_block_thread_info<<<BLOCK_SIZE, NUM_OF_THREADS>>>();
 
-    // Wait for all GPU threads to finish before the program exits.
+    // Wait for the GPU to finish before exiting
     cudaDeviceSynchronize();
+
     return 0;
 }

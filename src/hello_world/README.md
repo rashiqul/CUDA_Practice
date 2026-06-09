@@ -1,37 +1,38 @@
 # Hello World
 
-First CUDA kernel. Demonstrates the basic anatomy of a GPU program.
+First CUDA kernel. Demonstrates the basic anatomy of a GPU program and how blocks/threads are indexed in 3D.
 
 ## Concepts
 
 - `__global__` kernel declaration
 - Launch configuration `<<<blocks, threads_per_block>>>`
-- `blockIdx.x` and `threadIdx.x` thread coordinates
+- `blockIdx` and `threadIdx` as 3D coordinates: `(x, y, z)`
 - `cudaDeviceSynchronize()` — wait for GPU before CPU exits
 
 ## Launch Configuration
 
 ```
-hello_world<<<2, 4>>>()
+print_block_thread_info<<<2, 32>>>()
 ```
 
-- 2 blocks × 4 threads = **8 total threads**
-- Each thread gets a unique `(blockIdx.x, threadIdx.x)` pair
+- 2 blocks × 32 threads = **64 total threads**
+- For this 1D launch, `blockIdx.y = blockIdx.z = 0` and `threadIdx.y = threadIdx.z = 0`
+- Each thread prints its block ID and thread ID as `(x, y, z)`
 
 ## Expected Output
 
 ```
-Hello from block 0, thread 0
-Hello from block 0, thread 1
-Hello from block 0, thread 2
-Hello from block 0, thread 3
-Hello from block 1, thread 0
-Hello from block 1, thread 1
-Hello from block 1, thread 2
-Hello from block 1, thread 3
+Hello, World from CPU!
+The block ID is (0, 0, 0). The thread ID is (0, 0, 0)
+The block ID is (0, 0, 0). The thread ID is (1, 0, 0)
+...
+The block ID is (0, 0, 0). The thread ID is (31, 0, 0)
+The block ID is (1, 0, 0). The thread ID is (0, 0, 0)
+...
+The block ID is (1, 0, 0). The thread ID is (31, 0, 0)
 ```
 
-> Order may vary — the GPU scheduler does not guarantee block execution order.
+> Output order may vary — GPU scheduling does not guarantee a fixed execution order.
 
 ## Build & Run
 
