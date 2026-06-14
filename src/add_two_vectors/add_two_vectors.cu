@@ -16,11 +16,12 @@ __global__ void add_two_vectors(const int *d_A, const int *d_B, int *d_C)
 }
 
 // Function to allocate memory for the host vectors and populate them with sample data
-static void allocate_and_populate_vector_cpu(int *&h_A, int *&h_B)
+static void allocate_and_populate_vector_cpu(int *&h_A, int *&h_B, int *&h_C)
 {
     // Allocate memory for the host vectors
     h_A = (int*)malloc(NUM_OF_THREADS * sizeof(int));
     h_B = (int*)malloc(NUM_OF_THREADS * sizeof(int));
+    h_C = (int*)malloc(NUM_OF_THREADS * sizeof(int));
 
     // Populate the host vectors with sample data
     for (int i = 0; i < NUM_OF_THREADS; i++)
@@ -69,9 +70,8 @@ int main()
     int *d_A, *d_B, *d_C; 
 
     // Allocate memory and populate the input vectors on the host (CPU)
-    allocate_and_populate_vector_cpu(h_A, h_B);
-    h_C = (int*)malloc(NUM_OF_THREADS * sizeof(int));
-
+    allocate_and_populate_vector_cpu(h_A, h_B, h_C);
+    
     // Allocate memory and populate the input vectors on the device (GPU)
     allocate_and_populate_vector_gpu(h_A, h_B, d_A, d_B, d_C);
 
