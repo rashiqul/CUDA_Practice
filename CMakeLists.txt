@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 project(CUDA_Project LANGUAGES CXX CUDA)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 enable_language(CUDA)
 
