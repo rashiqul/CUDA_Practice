@@ -84,7 +84,6 @@ int main()
     // Copy the result from the device vector back to the host vector
     cudaMemcpy(h_C, d_C, NUM_OF_THREADS * sizeof(int), cudaMemcpyDeviceToHost);
 
-
     // Compare the results and print the output
     compare_and_print_results(h_A, h_B, h_C);
 
