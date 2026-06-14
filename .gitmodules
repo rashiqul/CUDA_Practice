@@ -1,3 +1,6 @@
-[submodule "ECE408_SP25"]
-	path = ECE408_SP25
+[submodule "extern/ECE408_SP25"]
+	path = extern/ECE408_SP25
 	url = git@github.com:illinois-cs-coursework/sp25_ece408_malam25.git
+[submodule "extern/libwb"]
+	path = extern/libwb
+	url = https://github.com/abduld/libwb.git
