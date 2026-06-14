@@ -1,9 +1,24 @@
-BUILD_DIR = build
+BUILD_DIR  = build
+LIBWB_DIR  = extern/libwb
+LIBWB_LIB  = $(LIBWB_DIR)/build/libwb.a
 
-.PHONY: configure clean clean-all build debug profile ncu
+.PHONY: configure clean clean-all build debug profile ncu libwb
 
 configure:
 	@poetry install
+	@echo "→ Initialising submodules..."
+	@git submodule update --init extern/ECE408_SP25 $(LIBWB_DIR)
+	@git -C $(LIBWB_DIR) checkout master
+	@$(MAKE) --no-print-directory libwb
+
+libwb: $(LIBWB_LIB)
+
+$(LIBWB_LIB):
+	@echo "→ Building libwb (static, once)..."
+	@cmake -S $(LIBWB_DIR) -B $(LIBWB_DIR)/build \
+	        -DCMAKE_BUILD_TYPE=Release -Wno-dev > /dev/null 2>&1
+	@cmake --build $(LIBWB_DIR)/build --target wb
+	@echo "→ libwb built: $@"
 
 # Second word on the command line is always the optional <file.cu> argument.
 # Works for: make build hello_world.cu / make debug hello_world.cu / etc.

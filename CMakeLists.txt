@@ -9,4 +9,20 @@ enable_language(CUDA)
 # Device-side debug info (-G) + host debug info (-g) when building Debug
 set(CMAKE_CUDA_FLAGS_DEBUG "-g -G")
 
+# ── libwb (pre-built once via `make configure`) ───────────────────────────────
+set(LIBWB_DIR "${CMAKE_SOURCE_DIR}/extern/libwb")
+set(LIBWB_LIB "${LIBWB_DIR}/build/libwb.a")
+
+if(EXISTS "${LIBWB_LIB}")
+    add_library(libwb STATIC IMPORTED GLOBAL)
+    set_target_properties(libwb PROPERTIES
+        IMPORTED_LOCATION "${LIBWB_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "${LIBWB_DIR}"
+        INTERFACE_COMPILE_DEFINITIONS "WB_USE_COURSERA"
+    )
+    message(STATUS "libwb found: ${LIBWB_LIB}")
+else()
+    message(STATUS "libwb not built yet — run `make configure` first")
+endif()
+
 add_subdirectory(src)
