@@ -11,3 +11,6 @@
 __pycache__/
 *.pyc
 poetry.lock
+
+# libwb submodule build output
+extern/libwb/build/
