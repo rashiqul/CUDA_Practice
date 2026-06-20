@@ -12,5 +12,6 @@
     ],
     "C_Cpp.default.defines": [
         "__CUDACC__"
-    ]
+    ],
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"
 }
