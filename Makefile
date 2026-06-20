@@ -1,6 +1,20 @@
 BUILD_DIR  = build
 LIBWB_DIR  = extern/libwb
-LIBWB_LIB  = $(LIBWB_DIR)/build/libwb.a
+
+# ── Host OS detection ─────────────────────────────────────────────────────────
+ifeq ($(OS),Windows_NT)
+  HOST_OS   := Windows
+  EXE       := .exe
+  RMDIR     := powershell -NoProfile -Command "if (Test-Path '$(BUILD_DIR)') { Remove-Item '$(BUILD_DIR)' -Recurse -Force }" 2>NUL || true
+  RMCACHE   := powershell -NoProfile -Command "Get-ChildItem -Recurse -Filter '__pycache__' | Remove-Item -Recurse -Force" 2>NUL || true
+  LIBWB_LIB := $(LIBWB_DIR)/build/wb.lib
+else
+  HOST_OS   := $(shell uname -s)
+  EXE       :=
+  RMDIR     := rm -rf $(BUILD_DIR)
+  RMCACHE   := find . -name "__pycache__" -type d -not -path "./.git/*" -exec rm -rf {} + 2>/dev/null; true
+  LIBWB_LIB := $(LIBWB_DIR)/build/libwb.a
+endif
 
 .PHONY: configure clean clean-all build debug profile ncu libwb
 
@@ -14,9 +28,12 @@ configure:
 libwb: $(LIBWB_LIB)
 
 $(LIBWB_LIB):
-	@echo "→ Building libwb (static, once)..."
-	@cmake -S $(LIBWB_DIR) -B $(LIBWB_DIR)/build \
-	        -DCMAKE_BUILD_TYPE=Release -Wno-dev > /dev/null 2>&1
+	@echo "→ Building libwb (static, once) on $(HOST_OS)..."
+ifeq ($(OS),Windows_NT)
+	@cmake -S $(LIBWB_DIR) -B $(LIBWB_DIR)/build -DCMAKE_BUILD_TYPE=Release -Wno-dev
+else
+	@cmake -S $(LIBWB_DIR) -B $(LIBWB_DIR)/build -DCMAKE_BUILD_TYPE=Release -Wno-dev > /dev/null 2>&1
+endif
 	@cmake --build $(LIBWB_DIR)/build --target wb
 	@echo "→ libwb built: $@"
 
@@ -32,14 +49,19 @@ endif
 # ── Release build ────────────────────────────────────────────────────────────
 
 build:
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path '$(BUILD_DIR)' | Out-Null"
+	@cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Release -Wno-dev
+else
 	@mkdir -p $(BUILD_DIR)
 	@cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Release -Wno-dev > /dev/null 2>&1
+endif
 	@if [ -n "$(_TARGET)" ]; then \
 		echo "Building $(_TARGET)..."; \
 		cmake --build $(BUILD_DIR) --target $(_TARGET); \
 		echo ""; \
 		echo "=== $(_TARGET) output ==="; \
-		$(BUILD_DIR)/$(_TARGET) 2>&1 | tee $(BUILD_DIR)/$(_TARGET)_output.txt; \
+		$(BUILD_DIR)/$(_TARGET)$(EXE) 2>&1 | tee $(BUILD_DIR)/$(_TARGET)_output.txt; \
 	else \
 		echo "Building all CUDA targets..."; \
 		cmake --build $(BUILD_DIR); \
@@ -47,7 +69,7 @@ build:
 		for src in src/*/*.cu; do \
 			name=$$(basename $$src .cu); \
 			echo "=== $$name output ==="; \
-			$(BUILD_DIR)/$$name 2>&1 | tee $(BUILD_DIR)/$${name}_output.txt; \
+			$(BUILD_DIR)/$$name$(EXE) 2>&1 | tee $(BUILD_DIR)/$${name}_output.txt; \
 			echo ""; \
 		done; \
 	fi
@@ -57,12 +79,17 @@ build:
 # Use with: make debug hello_world.cu
 
 debug:
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path '$(BUILD_DIR)/debug' | Out-Null"
+	@cmake -S . -B $(BUILD_DIR)/debug -DCMAKE_BUILD_TYPE=Debug -Wno-dev
+else
 	@mkdir -p $(BUILD_DIR)/debug
 	@cmake -S . -B $(BUILD_DIR)/debug -DCMAKE_BUILD_TYPE=Debug -Wno-dev > /dev/null 2>&1
+endif
 	@if [ -n "$(_TARGET)" ]; then \
 		echo "Building $(_TARGET) (debug)..."; \
 		cmake --build $(BUILD_DIR)/debug --target $(_TARGET); \
-		echo "Debug binary: $(BUILD_DIR)/debug/$(_TARGET)"; \
+		echo "Debug binary: $(BUILD_DIR)/debug/$(_TARGET)$(EXE)"; \
 	else \
 		echo "Building all CUDA targets (debug)..."; \
 		cmake --build $(BUILD_DIR)/debug; \
@@ -77,14 +104,18 @@ PROFILES_DIR = $(BUILD_DIR)/profiles
 
 profile:
 	@[ -n "$(_TARGET)" ] || (echo "Usage: make profile <file.cu>"; exit 1)
-	@[ -f "$(BUILD_DIR)/$(_TARGET)" ] || (echo "Binary not found — run: make build $(_ARG)"; exit 1)
+	@[ -f "$(BUILD_DIR)/$(_TARGET)$(EXE)" ] || (echo "Binary not found — run: make build $(_ARG)"; exit 1)
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path '$(PROFILES_DIR)' | Out-Null"
+else
 	@mkdir -p $(PROFILES_DIR)
+endif
 	@echo "Profiling $(_TARGET) with Nsight Systems..."
 	@nsys profile \
 		--output=$(PROFILES_DIR)/$(_TARGET)_nsys \
 		--stats=true \
 		--force-overwrite=true \
-		$(BUILD_DIR)/$(_TARGET)
+		$(BUILD_DIR)/$(_TARGET)$(EXE)
 	@echo "Report saved: $(PROFILES_DIR)/$(_TARGET)_nsys.nsys-rep"
 
 # ── Nsight Compute — kernel-level metrics ────────────────────────────────────
@@ -93,22 +124,30 @@ profile:
 
 ncu:
 	@[ -n "$(_TARGET)" ] || (echo "Usage: make ncu <file.cu>"; exit 1)
-	@[ -f "$(BUILD_DIR)/$(_TARGET)" ] || (echo "Binary not found — run: make build $(_ARG)"; exit 1)
+	@[ -f "$(BUILD_DIR)/$(_TARGET)$(EXE)" ] || (echo "Binary not found — run: make build $(_ARG)"; exit 1)
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path '$(PROFILES_DIR)' | Out-Null"
+else
 	@mkdir -p $(PROFILES_DIR)
+endif
 	@echo "Analyzing $(_TARGET) with Nsight Compute..."
 	@ncu \
 		--set full \
 		--export $(PROFILES_DIR)/$(_TARGET)_ncu \
 		--force-overwrite \
-		$(BUILD_DIR)/$(_TARGET)
+		$(BUILD_DIR)/$(_TARGET)$(EXE)
 	@echo "Report saved: $(PROFILES_DIR)/$(_TARGET)_ncu.ncu-rep"
 
 # ── Cleanup ───────────────────────────────────────────────────────────────────
 
 clean:
-	@rm -rf $(BUILD_DIR)
-	@find . -name "__pycache__" -type d -not -path "./.git/*" -exec rm -rf {} + 2>/dev/null; true
+	@$(RMDIR)
+	@$(RMCACHE)
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -Command "Get-ChildItem -Recurse -Filter '*.pyc' | Remove-Item -Force" 2>NUL || true
+else
 	@find . -name "*.pyc" -not -path "./.git/*" -delete 2>/dev/null; true
+endif
 	@echo "Cleaned."
 
 clean-all: clean
