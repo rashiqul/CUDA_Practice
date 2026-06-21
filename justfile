@@ -1,8 +1,7 @@
 # ── Shell configuration ───────────────────────────────────────────────────────
 # Simple recipes (no shebang) run in sh on Unix or PowerShell on Windows.
-# Complex recipes declare their own interpreter via a shebang line:
-#   #!/usr/bin/env bash  (Unix)
-#   #!/usr/bin/env pwsh  (Windows — requires PowerShell 7+)
+# On Windows, cmake calls use Ninja generator via cmd /c vcvarsall to avoid
+# the VS generator's CUDA toolset registry requirement.
 #
 # Install just:  cargo install just
 #   Windows:     winget install Casey.Just
@@ -15,6 +14,10 @@ set windows-shell := ["powershell.exe", "-NoProfile", "-Command"]
 build_dir    := "build"
 libwb_dir    := "extern/libwb"
 profiles_dir := build_dir / "profiles"
+
+# Path to vcvarsall.bat — sets up MSVC environment for Ninja + CUDA builds.
+# Ninja is used instead of the VS generator to avoid CUDA toolset registry lookups.
+vcvarsall := 'C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat'
 
 # ── Default: list available recipes ───────────────────────────────────────────
 
@@ -54,8 +57,7 @@ libwb:
 [windows]
 libwb:
     Write-Host "→ Building libwb..." -ForegroundColor Cyan
-    cmake -S {{libwb_dir}} -B {{libwb_dir}}/build -DCMAKE_BUILD_TYPE=Release -Wno-dev
-    cmake --build {{libwb_dir}}/build --target wb
+    cmd /c '"{{vcvarsall}}" x64 >nul 2>&1 && cmake -S {{libwb_dir}} -B {{libwb_dir}}/build -G Ninja -DCMAKE_BUILD_TYPE=Release -Wno-dev && cmake --build {{libwb_dir}}/build --target wb'
     Write-Host "→ libwb built." -ForegroundColor Green
 
 # ── build ─────────────────────────────────────────────────────────────────────
@@ -89,27 +91,8 @@ build file="":
 
 [windows]
 build file="":
-    #!/usr/bin/env pwsh
-    $target = if ("{{file}}" -ne "") { [System.IO.Path]::GetFileNameWithoutExtension("{{file}}") } else { "" }
-    New-Item -ItemType Directory -Force -Path "{{build_dir}}" | Out-Null
-    cmake -S . -B {{build_dir}} -DCMAKE_BUILD_TYPE=Release -Wno-dev
-    if ($target) {
-        Write-Host "Building $target..." -ForegroundColor Cyan
-        cmake --build {{build_dir}} --target $target
-        Write-Host "`n=== $target output ===" -ForegroundColor Yellow
-        & "{{build_dir}}/$target.exe" | Tee-Object -FilePath "{{build_dir}}/${target}_output.txt"
-    } else {
-        Write-Host "Building all CUDA targets..." -ForegroundColor Cyan
-        cmake --build {{build_dir}}
-        Get-ChildItem src -Directory | ForEach-Object {
-            $name = $_.Name
-            $bin  = "{{build_dir}}/$name.exe"
-            if (Test-Path $bin) {
-                Write-Host "`n=== $name output ===" -ForegroundColor Yellow
-                & $bin | Tee-Object -FilePath "{{build_dir}}/${name}_output.txt"
-            }
-        }
-    }
+    cmd /c '"{{vcvarsall}}" x64 >nul 2>&1 && cmake -S . -B {{build_dir}} -G Ninja -DCMAKE_BUILD_TYPE=Release -Wno-dev && cmake --build {{build_dir}} {{ if file != "" { "--target " + file_stem(file) } else { "" } }}'
+    {{ if file != "" { "& '" + build_dir + "/" + file_stem(file) + ".exe' | Tee-Object '" + build_dir + "/" + file_stem(file) + "_output.txt'" } else { "Get-ChildItem src -Directory | ForEach-Object { $n=$_.Name; $b='" + build_dir + "/$n.exe'; if(Test-Path $b){ Write-Host (\"=== $n output ===\") -ForegroundColor Yellow; & $b | Tee-Object ('" + build_dir + "/$n`_output.txt') } }" } }}
 
 # ── debug ─────────────────────────────────────────────────────────────────────
 # Build with -g -G then launch the debugger.
@@ -128,8 +111,7 @@ _build-debug file:
 [private]
 [windows]
 _build-debug file:
-    cmake -S . -B {{build_dir}}/debug -DCMAKE_BUILD_TYPE=Debug -Wno-dev
-    cmake --build {{build_dir}}/debug --target {{file_stem(file)}}
+    cmd /c '"{{vcvarsall}}" x64 >nul 2>&1 && cmake -S . -B {{build_dir}}/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -Wno-dev && cmake --build {{build_dir}}/debug --target {{file_stem(file)}}'
 
 [unix]
 debug file: (_build-debug file)
@@ -163,18 +145,10 @@ profile file:
 
 [windows]
 profile file:
-    #!/usr/bin/env pwsh
-    $target = [System.IO.Path]::GetFileNameWithoutExtension("{{file}}")
-    $bin    = "{{build_dir}}/$target.exe"
-    if (-not (Test-Path $bin)) { throw "Binary not found — run: just build {{file}}" }
-    New-Item -ItemType Directory -Force -Path "{{profiles_dir}}" | Out-Null
-    Write-Host "Profiling $target with Nsight Systems..." -ForegroundColor Cyan
-    nsys profile `
-        --output="{{profiles_dir}}/${target}_nsys" `
-        --stats=true `
-        --force-overwrite=true `
-        $bin
-    Write-Host "Report saved: {{profiles_dir}}/${target}_nsys.nsys-rep" -ForegroundColor Green
+    if (-not (Test-Path '{{build_dir}}/{{file_stem(file)}}.exe')) { throw 'Binary not found — run: just build {{file}}' }
+    cmake -E make_directory {{profiles_dir}}
+    nsys profile --output='{{profiles_dir}}/{{file_stem(file)}}_nsys' --stats=true --force-overwrite=true '{{build_dir}}/{{file_stem(file)}}.exe'
+    Write-Host 'Report saved: {{profiles_dir}}/{{file_stem(file)}}_nsys.nsys-rep' -ForegroundColor Green
 
 # ── metrics ──────────────────────────────────────────────────────────────────
 # Kernel-level analysis with Nsight Compute. Saves .ncu-rep to build/profiles/.
@@ -198,18 +172,10 @@ metrics file:
 
 [windows]
 metrics file:
-    #!/usr/bin/env pwsh
-    $target = [System.IO.Path]::GetFileNameWithoutExtension("{{file}}")
-    $bin    = "{{build_dir}}/$target.exe"
-    if (-not (Test-Path $bin)) { throw "Binary not found — run: just build {{file}}" }
-    New-Item -ItemType Directory -Force -Path "{{profiles_dir}}" | Out-Null
-    Write-Host "Analyzing $target with Nsight Compute..." -ForegroundColor Cyan
-    ncu `
-        --set full `
-        "--export={{profiles_dir}}/${target}_ncu" `
-        --force-overwrite `
-        $bin
-    Write-Host "Report saved: {{profiles_dir}}/${target}_ncu.ncu-rep" -ForegroundColor Green
+    if (-not (Test-Path '{{build_dir}}/{{file_stem(file)}}.exe')) { throw 'Binary not found — run: just build {{file}}' }
+    cmake -E make_directory {{profiles_dir}}
+    ncu --set full '--export={{profiles_dir}}/{{file_stem(file)}}_ncu' --force-overwrite '{{build_dir}}/{{file_stem(file)}}.exe'
+    Write-Host 'Report saved: {{profiles_dir}}/{{file_stem(file)}}_ncu.ncu-rep' -ForegroundColor Green
 
 
 
