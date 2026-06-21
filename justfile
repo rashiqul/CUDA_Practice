@@ -224,5 +224,12 @@ clean:
 
 # ── clean-all ─────────────────────────────────────────────────────────────────
 
+[unix]
 clean-all: clean
-    poetry env remove --all
+    poetry env remove --all 2>/dev/null || true
+    echo "Removed Poetry environment."
+
+[windows]
+clean-all: clean
+    if (Get-Command poetry -ErrorAction SilentlyContinue) { poetry env remove --all }
+    Write-Host "Removed Poetry environment." -ForegroundColor Green
