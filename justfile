@@ -32,13 +32,13 @@ configure: _init-submodules libwb
 [unix]
 _init-submodules:
     git submodule update --init {{libwb_dir}}
-    git -C {{libwb_dir}} checkout master
+    git -C {{libwb_dir}} checkout main
 
 [private]
 [windows]
 _init-submodules:
     git submodule update --init {{libwb_dir}}
-    git -C {{libwb_dir}} checkout master
+    git -C {{libwb_dir}} checkout main
 
 # ── libwb ─────────────────────────────────────────────────────────────────────
 
