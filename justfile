@@ -35,13 +35,13 @@ configure: _init-submodules libwb
 [unix]
 _init-submodules:
     git submodule update --init {{libwb_dir}}
-    git -C {{libwb_dir}} checkout main
+    git -C {{libwb_dir}} checkout -B main origin/main
 
 [private]
 [windows]
 _init-submodules:
     git submodule update --init {{libwb_dir}}
-    git -C {{libwb_dir}} checkout main
+    git -C {{libwb_dir}} checkout -B main origin/main
 
 # ── libwb ─────────────────────────────────────────────────────────────────────
 
