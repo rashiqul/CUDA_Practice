@@ -17,7 +17,7 @@ profiles_dir := build_dir / "profiles"
 
 # Path to vcvarsall.bat — sets up MSVC environment for Ninja + CUDA builds.
 # Ninja is used instead of the VS generator to avoid CUDA toolset registry lookups.
-vcvarsall := 'C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat'
+vcvarsall := 'C:/Program Files/Microsoft Visual Studio/18/Community/VC/Auxiliary/Build/vcvarsall.bat'
 
 # ── Default: list available recipes ───────────────────────────────────────────
 
