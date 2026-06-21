@@ -12,6 +12,12 @@ project(CUDA_Project LANGUAGES CXX CUDA)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Always use the release CRT (/MD) so we match the pre-built libwb (Release).
+# Debug symbols are still emitted via CMAKE_CUDA_FLAGS_DEBUG (-g -G).
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+endif()
+
 enable_language(CUDA)
 
 # Device-side debug info (-G) + host debug info (-g) when building Debug
