@@ -34,6 +34,7 @@ configure: _init-submodules libwb
 [private]
 [unix]
 _init-submodules:
+    git submodule sync {{libwb_dir}}
     git submodule update --init {{libwb_dir}}
     git -C {{libwb_dir}} fetch origin main
     git -C {{libwb_dir}} checkout -B main origin/main
@@ -41,6 +42,7 @@ _init-submodules:
 [private]
 [windows]
 _init-submodules:
+    git submodule sync {{libwb_dir}}
     git submodule update --init {{libwb_dir}}
     git -C {{libwb_dir}} fetch origin main
     git -C {{libwb_dir}} checkout -B main origin/main
