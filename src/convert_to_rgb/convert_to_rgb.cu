@@ -30,8 +30,8 @@ static void pixel_setup(void)
     {
         for(int col = 0; col < IMAGE_WIDTH; col++)
         {
-            int value;
-            fscanf(f, "%d", &value);
+            int value = 0;
+            if (fscanf(f, "%d", &value) != 1) { value = 0; }
             hostImageData[row * IMAGE_WIDTH + col] = (unsigned char)value;
         }
     }
