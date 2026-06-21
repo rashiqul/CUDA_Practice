@@ -6,6 +6,12 @@
 *.fatbin
 /build
 
+# Visual Studio CMake output (redirected to build/ via CMakeSettings.json)
+out/
+
+# Visual Studio workspace state
+.vs/
+
 # Python / Poetry
 .venv/
 __pycache__/
