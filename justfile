@@ -29,9 +29,18 @@ configure: _init-submodules libwb
     poetry install
 
 [private]
+[unix]
 _init-submodules:
-    git submodule update --init extern/ECE408_SP25 {{libwb_dir}}
+    git submodule update --init {{libwb_dir}}
     git -C {{libwb_dir}} checkout master
+    git submodule update --init extern/ECE408_SP25 || echo "⚠ Skipping ECE408_SP25 — SAML SSO required (authorize SSH key at github.com/orgs/illinois-cs-coursework)"
+
+[private]
+[windows]
+_init-submodules:
+    git submodule update --init {{libwb_dir}}
+    git -C {{libwb_dir}} checkout master
+    git submodule update --init extern/ECE408_SP25; if ($LASTEXITCODE -ne 0) { Write-Host "⚠ Skipping ECE408_SP25 — SAML SSO required (authorize SSH key at github.com/orgs/illinois-cs-coursework)" -ForegroundColor Yellow }
 
 # ── libwb ─────────────────────────────────────────────────────────────────────
 
