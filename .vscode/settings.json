@@ -3,15 +3,22 @@
         "*.cu": "cuda-cpp",
         "*.cuh": "cuda-cpp"
     },
-    "C_Cpp.default.compilerPath": "/usr/bin/g++",
-    "C_Cpp.intelliSenseEngine": "default",
     "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.default.defines": [
+        "__CUDACC__"
+    ],
+    // Linux / WSL paths
+    "C_Cpp.default.compilerPath": "/usr/bin/g++",
     "C_Cpp.default.includePath": [
         "${workspaceFolder}/src",
         "/usr/local/cuda/include"
     ],
-    "C_Cpp.default.defines": [
-        "__CUDACC__"
-    ],
+    // Windows paths — uncomment and update when working on native Windows
+    // "C_Cpp.default.compilerPath": "cl.exe",
+    // "C_Cpp.default.includePath": [
+    //     "${workspaceFolder}/src",
+    //     "${env:CUDA_PATH}/include"
+    // ],
     "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"
 }

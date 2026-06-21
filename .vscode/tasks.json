@@ -4,8 +4,8 @@
         {
             "label": "build-debug: active file",
             "type": "shell",
-            "command": "make",
-            "args": ["debug", "${fileBasename}"],
+            "command": "just",
+            "args": ["_build-debug", "${fileBasename}"],
             "group": "build",
             "presentation": {
                 "reveal": "always",
