@@ -12,6 +12,14 @@ project(CUDA_Project LANGUAGES CXX CUDA)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Prevent nvcc from using response files for includes so that cpptools
+# (VS Code IntelliSense) can read include paths directly from compile_commands.json.
+# Only applied on non-Windows: Windows has an ~8191-char command-line limit and
+# relies on response files to stay under it.
+if(NOT WIN32)
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
+endif()
+
 # Always use the release CRT (/MD) so we match the pre-built libwb (Release).
 # Debug symbols are still emitted via CMAKE_CUDA_FLAGS_DEBUG (-g -G).
 if(MSVC)
