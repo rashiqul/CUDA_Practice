@@ -1,0 +1,8 @@
+Matrix multiplication comparison report
+Matrix size: 1024 x 1024, relative tolerance: 0.001
+
+
+--- Summary ---
+Total elements checked : 1048576
+Mismatches found       : 0
+Result                 : PASS
