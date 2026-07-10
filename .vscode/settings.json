@@ -13,5 +13,7 @@
     "C_Cpp.default.includePath": [
         "${workspaceFolder}/src",
         "/usr/local/cuda/include"
-    ]
+    ],
+    "github.copilot.editor.enableAutoCompletions": true,
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"
 }
