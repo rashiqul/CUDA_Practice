@@ -5,7 +5,7 @@
 #define TILE_WIDTH (16)
 #define BLOCK_SIZE (TILE_WIDTH + MASK_WIDTH - 1)
 
-__constant__ float mask[MASK_WIDTH];
+__constant__ float mask_1D_tiled[MASK_WIDTH];
 
 __global__ void convolution_1D_tiled_kernel(float *input, float *output, int width)
 {
@@ -35,7 +35,7 @@ __global__ void convolution_1D_tiled_kernel(float *input, float *output, int wid
     {
         for (int j = 0; j < MASK_WIDTH; ++j)
         {
-            pvalue += tile[tx + j] * mask[j];
+            pvalue += tile[tx + j] * mask_1D_tiled[j];
         }
         if (index_o < width)
         {
@@ -48,7 +48,6 @@ __global__ void convolution_1D_tiled_kernel(float *input, float *output, int wid
 void setup_for_1D_tiled_conv(void)
 {
     int inputLength;
-    int maskWidth;
     
     float *hostInput;
     float *hostOutput;
@@ -61,8 +60,8 @@ void setup_for_1D_tiled_conv(void)
     wbLog(TRACE, "1D input width: ", inputLength);
 
     // Load the mask matrix
-    hostMask = (float *)wbImport(DATA_DIRECTORY_1D "/kernel.dat", &maskWidth);
-    wbLog(TRACE, "1D mask width: ", maskWidth);
+    hostMask = (float *)wbImport(DATA_DIRECTORY_1D "/kernel.dat", NULL);
+    wbLog(TRACE, "1D mask width: ", MASK_WIDTH);
 
     // Allocate memory for CPU
     // CPU Output
@@ -78,7 +77,7 @@ void setup_for_1D_tiled_conv(void)
     cudaMemcpy(deviceInput, hostInput, inputLength * sizeof(float), cudaMemcpyHostToDevice);
     
     // Copy the mask to constant memory on the device
-    cudaMemcpyToSymbol(mask, hostMask, maskWidth * sizeof(float));
+    cudaMemcpyToSymbol(mask_1D_tiled, hostMask, MASK_WIDTH * sizeof(float));
 
     // Define block and grid dimensions
     dim3 blockDim(BLOCK_SIZE, 1, 1);

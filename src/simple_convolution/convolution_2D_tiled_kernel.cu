@@ -1,47 +1,53 @@
 #include <wb.h>
 #include "convolution_verify.h"
 
-#define BLOCK_SIZE 16
-#define MASK_WIDTH 5
-#define TILE_SIZE (BLOCK_SIZE + MASK_WIDTH - 1)
+#define MASK_WIDTH (5)
+#define TILE_WIDTH (12)
+#define BLOCK_SIZE (TILE_WIDTH + MASK_WIDTH - 1)
 
-// Defined in convolution_2D_basic_kernel.cu
-extern __constant__ float M[MASK_WIDTH * MASK_WIDTH];
+__constant__ float mask_2D_tiled[MASK_WIDTH][MASK_WIDTH];
 
-__global__ void convolution_2D_tiled_kernel(float *N, float *P, int mask_width, int num_rows, int num_cols)
+__global__ void convolution_2D_tiled_kernel(float *N, float *P, int num_rows, int num_cols)
 {
-    __shared__ float tile_N[TILE_SIZE][TILE_SIZE];
+    // Strategy: Each thread loads exactly one element of the tile (parallelizing tile loading)
+    
+    __shared__ float tile_N[BLOCK_SIZE][BLOCK_SIZE];
 
-    // Each thread loads exactly one element of the tile (including halo)
-    int in_row = blockIdx.y * BLOCK_SIZE - (mask_width / 2) + threadIdx.y;
-    int in_col = blockIdx.x * BLOCK_SIZE - (mask_width / 2) + threadIdx.x;
+    int ty = threadIdx.y;
+    int tx = threadIdx.x;
+    
+    int row_out = blockIdx.y * TILE_WIDTH + ty;
+    int col_out = blockIdx.x * TILE_WIDTH + tx;
 
-    if (in_row >= 0 && in_row < num_rows && in_col >= 0 && in_col < num_cols)
-        tile_N[threadIdx.y][threadIdx.x] = N[in_row * num_cols + in_col];
+    int row_in = row_out - (MASK_WIDTH / 2);
+    int col_in = col_out - (MASK_WIDTH / 2);
+
+    float pvalue = 0.0f;
+
+    if (row_in >= 0 && row_in < num_rows && col_in >= 0 && col_in < num_cols)
+    {
+        tile_N[ty][tx] = N[row_in * num_cols + col_in];
+    }
     else
-        tile_N[threadIdx.y][threadIdx.x] = 0.0f;
+    {
+        tile_N[ty][tx] = 0.0f;
+    }
 
     __syncthreads();
 
-    // Only the inner BLOCK_SIZE x BLOCK_SIZE threads compute output
-    int row = blockIdx.y * BLOCK_SIZE + threadIdx.y;
-    int col = blockIdx.x * BLOCK_SIZE + threadIdx.x;
-
-    if (threadIdx.y < BLOCK_SIZE && threadIdx.x < BLOCK_SIZE)
+    if (ty < TILE_WIDTH && tx < TILE_WIDTH)
     {
-        float p_value = 0.0f;
-
-        for (int i = 0; i < mask_width; i++)
+        for (int i = 0; i < MASK_WIDTH; i++) // row
         {
-            for (int j = 0; j < mask_width; j++)
+            for (int j = 0; j < MASK_WIDTH; j++) // column
             {
-                p_value += tile_N[threadIdx.y + i][threadIdx.x + j] * M[i * mask_width + j];
+                pvalue += tile_N[ty + i][tx + j] * mask_2D_tiled[i][j];
             }
         }
 
-        if (row < num_rows && col < num_cols)
+        if (row_out < num_rows && col_out < num_cols)
         {
-            P[row * num_cols + col] = p_value;
+            P[row_out * num_cols + col_out] = pvalue;
         }
     }
 }
@@ -55,22 +61,20 @@ void setup_for_2D_conv_tiled(void)
     float *deviceInput;
     float *deviceOutput;
 
-    int inputLength;
-    int maskWidth;
-
     int numRows;
     int numCols;
 
     float *rawInput;
 
     // Import raw buffers
-    rawInput = (float *)wbImport(DATA_DIRECTORY_2D "/input.dat", &inputLength);
-    hostMask  = (float *)wbImport(DATA_DIRECTORY_2D "/kernel.dat", &maskWidth);
+    rawInput = (float *)wbImport(DATA_DIRECTORY_2D "/input.dat", NULL);
+    hostMask  = (float *)wbImport(DATA_DIRECTORY_2D "/kernel.dat", NULL);
 
     // Extract dimensions from the two header floats
     numRows = (int)rawInput[0];
     numCols = (int)rawInput[1];
     wbLog(TRACE, "2D tiled input size: ", numRows, "x", numCols);
+    wbLog(TRACE, "2D tiled mask width: ", MASK_WIDTH);
 
     hostInput = rawInput + 2;
 
@@ -83,14 +87,14 @@ void setup_for_2D_conv_tiled(void)
 
     // Copy data from host to device
     cudaMemcpy(deviceInput, hostInput, numRows * numCols * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpyToSymbol(M, hostMask, maskWidth * sizeof(float), 0, cudaMemcpyHostToDevice);
+    cudaMemcpyToSymbol(mask_2D_tiled, hostMask, MASK_WIDTH * MASK_WIDTH * sizeof(float), 0, cudaMemcpyHostToDevice);
 
-    // TILE_SIZE x TILE_SIZE threads: each thread loads exactly one tile element
-    dim3 blockDim(TILE_SIZE, TILE_SIZE, 1);
-    dim3 gridDim(ceil((float)numCols / BLOCK_SIZE), ceil((float)numRows / BLOCK_SIZE), 1);
+    // BLOCK_SIZE x BLOCK_SIZE threads: each thread loads exactly one tile element
+    dim3 blockDim(BLOCK_SIZE, BLOCK_SIZE, 1);
+    dim3 gridDim(ceil((float)numCols / TILE_WIDTH), ceil((float)numRows / TILE_WIDTH), 1);
 
     // Launch the kernel
-    convolution_2D_tiled_kernel<<<gridDim, blockDim>>>(deviceInput, deviceOutput, MASK_WIDTH, numRows, numCols);
+    convolution_2D_tiled_kernel<<<gridDim, blockDim>>>(deviceInput, deviceOutput, numRows, numCols);
 
     cudaDeviceSynchronize();
 

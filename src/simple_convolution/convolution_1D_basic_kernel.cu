@@ -28,7 +28,6 @@ __global__ void convolution_1D_basic_kernel(float *N, float *M, float *P, int ma
 void setup_for_1D_basic_conv(void)
 {
     int inputLength;
-    int maskWidth;
     float *hostInput;
     float *hostOutput;
     float *hostMask;
@@ -41,8 +40,8 @@ void setup_for_1D_basic_conv(void)
     wbLog(TRACE, "1D input width: ", inputLength);
 
     // Load the mask matrix
-    hostMask = (float *)wbImport(DATA_DIRECTORY_1D "/kernel.dat", &maskWidth);
-    wbLog(TRACE, "1D mask width: ", maskWidth);
+    hostMask = (float *)wbImport(DATA_DIRECTORY_1D "/kernel.dat", NULL);
+    wbLog(TRACE, "1D mask width: ", MASK_WIDTH);
 
     // Allocate memory for CPU
     hostOutput = (float *)malloc(inputLength * sizeof(float));
@@ -50,18 +49,18 @@ void setup_for_1D_basic_conv(void)
     // Allocate memory for GPU
     cudaMalloc((void**)&deviceInput, inputLength * sizeof(float));
     cudaMalloc((void**)&deviceOutput, inputLength * sizeof(float));
-    cudaMalloc((void**)&deviceMask, maskWidth * sizeof(float));
+    cudaMalloc((void**)&deviceMask, MASK_WIDTH * sizeof(float));
 
     // Copy data from host to device
     cudaMemcpy(deviceInput, hostInput, inputLength * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(deviceMask, hostMask, maskWidth * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(deviceMask, hostMask, MASK_WIDTH * sizeof(float), cudaMemcpyHostToDevice);
 
     // Define block and grid dimensions
     dim3 blockDim(BLOCK_SIZE, 1, 1);
     dim3 gridDim(ceil((float)inputLength / BLOCK_SIZE), 1, 1);
 
     // Launch the kernel
-    convolution_1D_basic_kernel<<<gridDim, blockDim>>>(deviceInput, deviceMask, deviceOutput, maskWidth, inputLength);
+    convolution_1D_basic_kernel<<<gridDim, blockDim>>>(deviceInput, deviceMask, deviceOutput, MASK_WIDTH, inputLength);
 
     cudaDeviceSynchronize();
 

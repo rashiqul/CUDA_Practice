@@ -4,7 +4,7 @@
 #define BLOCK_SIZE 16
 #define MASK_WIDTH 5
 
-__constant__ float M[MASK_WIDTH * MASK_WIDTH];
+__constant__ float mask_2D_basic[MASK_WIDTH * MASK_WIDTH];
 
 __global__ void convolution_2D_basic_kernel(float *N, float *P, int mask_width, int num_rows, int num_cols)
 {
@@ -24,7 +24,7 @@ __global__ void convolution_2D_basic_kernel(float *N, float *P, int mask_width, 
             {
                 if ((start_row + i >= 0) && (start_row + i < num_rows) && (start_col + j >= 0) && (start_col + j < num_cols))
                 {
-                    p_value += N[(start_row + i) * num_cols + (start_col + j)] * M[i * mask_width + j];
+                    p_value += N[(start_row + i) * num_cols + (start_col + j)] * mask_2D_basic[i * mask_width + j];
                 }
             }
         }
@@ -41,22 +41,20 @@ void setup_for_2D_basic_conv(void)
     float *deviceInput;
     float *deviceOutput;
 
-    int inputLength;
-    int maskWidth;
-
     int numRows;
     int numCols;
 
     float *rawInput;
 
     // Import raw buffers
-    rawInput = (float *)wbImport(DATA_DIRECTORY_2D "/input.dat", &inputLength);
-    hostMask  = (float *)wbImport(DATA_DIRECTORY_2D "/kernel.dat", &maskWidth);
+    rawInput = (float *)wbImport(DATA_DIRECTORY_2D "/input.dat", NULL);
+    hostMask  = (float *)wbImport(DATA_DIRECTORY_2D "/kernel.dat", NULL);
 
     // Extract dimensions from the two header floats
     numRows = (int)rawInput[0];
     numCols = (int)rawInput[1];
     wbLog(TRACE, "2D input size: ", numRows, "x", numCols);
+    wbLog(TRACE, "2D mask width: ", MASK_WIDTH);
 
     // hostInput[0] must point to the first element of the input matrix
     hostInput = rawInput + 2;
@@ -70,7 +68,7 @@ void setup_for_2D_basic_conv(void)
 
     // Copy data from host to device
     cudaMemcpy(deviceInput, hostInput, numRows * numCols * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpyToSymbol(M, hostMask, maskWidth * sizeof(float), 0, cudaMemcpyHostToDevice);
+    cudaMemcpyToSymbol(mask_2D_basic, hostMask, MASK_WIDTH * MASK_WIDTH * sizeof(float), 0, cudaMemcpyHostToDevice);
 
     // Define block and grid dimensions
     dim3 blockDim(BLOCK_SIZE, BLOCK_SIZE, 1);
