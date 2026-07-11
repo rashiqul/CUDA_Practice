@@ -4,12 +4,12 @@
 #include <cstdio>
 #include <wb.h>
 
-static void write_result_1d(const float *output, int width)
+static void write_result_1d(const float *output, int width, const char *result_path)
 {
-    FILE *fp = fopen(DATA_DIRECTORY_1D "/result.dat", "w");
+    FILE *fp = fopen(result_path, "w");
     if (fp == nullptr)
     {
-        wbLog(ERROR, "Could not open 1D result.dat for writing");
+        wbLog(ERROR, "Could not open result file for writing: ", result_path);
         return;
     }
     fprintf(fp, "%d\n", width);
@@ -18,15 +18,15 @@ static void write_result_1d(const float *output, int width)
         fprintf(fp, "%f\n", output[i]);
     }
     fclose(fp);
-    wbLog(TRACE, "1D result written to " DATA_DIRECTORY_1D "/result.dat");
+    wbLog(TRACE, "1D result written to ", result_path);
 }
 
-static void write_result_2d(const float *output, int rows, int cols)
+static void write_result_2d(const float *output, int rows, int cols, const char *result_path)
 {
-    FILE *fp = fopen(DATA_DIRECTORY_2D "/result.dat", "w");
+    FILE *fp = fopen(result_path, "w");
     if (fp == nullptr)
     {
-        wbLog(ERROR, "Could not open 2D result.dat for writing");
+        wbLog(ERROR, "Could not open result file for writing: ", result_path);
         return;
     }
     fprintf(fp, "%d\n%f\n%f\n", rows * cols + 2, (float)rows, (float)cols);
@@ -35,17 +35,14 @@ static void write_result_2d(const float *output, int rows, int cols)
         fprintf(fp, "%f\n", output[i]);
     }
     fclose(fp);
-    wbLog(TRACE, "2D result written to " DATA_DIRECTORY_2D "/result.dat");
+    wbLog(TRACE, "2D result written to ", result_path);
 }
 
-void verify_1D_conv(const float *output, int width)
+static void compare_1d(const float *output, int width, const char *label)
 {
-    write_result_1d(output, width);
-
     int expectedLength;
     float *expectedOutput = (float *)wbImport(DATA_DIRECTORY_1D "/output.dat", &expectedLength);
 
-    // No dimension header in output.dat; values start at index 0
     bool passed = true;
     for (int i = 0; i < width; i++)
     {
@@ -56,15 +53,13 @@ void verify_1D_conv(const float *output, int width)
             passed = false;
         }
     }
-    wbLog(TRACE, "1D convolution ", passed ? "PASSED" : "FAILED");
+    wbLog(TRACE, label, passed ? " PASSED" : " FAILED");
 
     free(expectedOutput);
 }
 
-void verify_2D_conv(const float *output, int rows, int cols)
+static void compare_2d(const float *output, int rows, int cols, const char *label)
 {
-    write_result_2d(output, rows, cols);
-
     int expectedLength;
     float *expectedOutput = (float *)wbImport(DATA_DIRECTORY_2D "/output.dat", &expectedLength);
 
@@ -81,7 +76,31 @@ void verify_2D_conv(const float *output, int rows, int cols)
             passed = false;
         }
     }
-    wbLog(TRACE, "2D convolution ", passed ? "PASSED" : "FAILED");
+    wbLog(TRACE, label, passed ? " PASSED" : " FAILED");
 
     free(expectedOutput);
+}
+
+void verify_1D_basic_conv(const float *output, int width)
+{
+    write_result_1d(output, width, DATA_DIRECTORY_1D "/output_1D_conv_basic.dat");
+    compare_1d(output, width, "1D basic convolution");
+}
+
+void verify_1D_tiled_conv(const float *output, int width)
+{
+    write_result_1d(output, width, DATA_DIRECTORY_1D "/output_1D_conv_tiled.dat");
+    compare_1d(output, width, "1D tiled convolution");
+}
+
+void verify_2D_basic_conv(const float *output, int rows, int cols)
+{
+    write_result_2d(output, rows, cols, DATA_DIRECTORY_2D "/output_2D_conv_basic.dat");
+    compare_2d(output, rows, cols, "2D basic convolution");
+}
+
+void verify_2D_tiled_conv(const float *output, int rows, int cols)
+{
+    write_result_2d(output, rows, cols, DATA_DIRECTORY_2D "/output_2D_conv_tiled.dat");
+    compare_2d(output, rows, cols, "2D tiled convolution");
 }
