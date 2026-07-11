@@ -85,11 +85,18 @@ build file="":
     else
         echo "Building all CUDA targets..."
         cmake --build {{build_dir}}
-        for src in src/*/*.cu; do
-            name=$(basename "$src" .cu)
-            echo "=== $name output ==="
-            {{build_dir}}/$name 2>&1 | tee {{build_dir}}/${name}_output.txt
-            echo ""
+        for dir in src/*/; do
+            cu_files=("$dir"*.cu)
+            if [ ${#cu_files[@]} -eq 1 ]; then
+                name=$(basename "${cu_files[0]}" .cu)
+            else
+                name=$(basename "$dir")
+            fi
+            if [ -f "{{build_dir}}/$name" ]; then
+                echo "=== $name output ==="
+                {{build_dir}}/$name 2>&1 | tee {{build_dir}}/${name}_output.txt
+                echo ""
+            fi
         done
     fi
 
