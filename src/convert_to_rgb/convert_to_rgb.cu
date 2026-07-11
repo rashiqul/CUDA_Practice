@@ -14,7 +14,7 @@ unsigned char *hostImageData = (unsigned char *)malloc(IMAGE_WIDTH  * IMAGE_HEIG
 static void pixel_setup(void)
 {
     /* Open the input file for reading */
-    FILE *f = fopen("/home/rashiqul/Workspace/CUDA_Practice/src/convert_to_rgb/input/input_pixels.txt", 
+    FILE *f = fopen("/home/rashiq25/Workspace/CUDA_Practice/src/convert_to_rgb/input/input_pixels.txt", 
                     "r");
 
     /* Check for null pointer */
@@ -190,9 +190,9 @@ int main(void)
 
     // Write both output files
     pixel_print(hostRGBImageData,    IMAGE_WIDTH, IMAGE_HEIGHT,
-                "/home/rashiqul/Workspace/CUDA_Practice/src/convert_to_rgb/output/output_pixels.txt");
+                "/home/rashiq25/Workspace/CUDA_Practice/src/convert_to_rgb/output/output_pixels.txt");
     pixel_print(hostFalseColorData,  IMAGE_WIDTH, IMAGE_HEIGHT,
-                "/home/rashiqul/Workspace/CUDA_Practice/src/convert_to_rgb/output/output_false_color.txt");
+                "/home/rashiq25/Workspace/CUDA_Practice/src/convert_to_rgb/output/output_false_color.txt");
 
     // Free the device memory
     cudaFree(deviceImageData);
